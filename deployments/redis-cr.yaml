@@ -6,7 +6,7 @@ metadata:
 spec:
   type: state.redis
   metadata:
-  - name: redisHost
-    value: redis-leader:6379
-  - name: redisPassword
-    value: ""
+    - name: redisHost
+      value: redis-leader.default:6379
+    - name: redisPassword
+      value: ""

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: service-1
+  name: service-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-1
+  template:
+    metadata:
+      labels:
+        app: service-1
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/id: "service-1"
+        dapr.io/port: "6060"
+    spec:
+      containers:
+        - name: service-1
+          image: harshanarayana/dapr-series-service-1:latest
+          ports:
+            - containerPort: 6060
+              name: http
