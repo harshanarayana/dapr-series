@@ -6,6 +6,7 @@ from sanic.request import Request
 from sanic.response import json
 
 import grpc
+import requests
 
 from dapr.proto import api_v1, common_v1, api_service_v1
 from google.protobuf.any_pb2 import Any
@@ -20,6 +21,7 @@ STORE_NAME = getenv("STORE_NAME", "statestore")
 DAPR_CLIENT = api_service_v1.DaprStub(
     grpc.insecure_channel(f"localhost:{DAPR_GRPC_PORT}")
 )
+DAPR_FORWARDER = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/invoke"
 
 
 def _store_state(state_value):
@@ -54,6 +56,12 @@ async def log_info(app: Sanic, loop):
     logger.info(f"DAPR_GRPC_PORT -> {DAPR_GRPC_PORT}")
     logger.info(f"DAPR_HTTP_PORT -> {DAPR_HTTP_PORT}")
     logger.info("=================================================")
+
+
+@app.get("/s2/ping")
+async def s2_ping(request: Request):
+    d = requests.get(f"{DAPR_FORWARDER}/service-2/method/ping")
+    return json({"message": d.json()})
 
 
 @app.get("/ping")
