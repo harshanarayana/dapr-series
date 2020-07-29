@@ -23,6 +23,14 @@ type StateRequest struct {
 	Message string `json:"message"`
 }
 
+func handleT1() gin.HandlerFunc {
+    return func(context *gin.Context) {
+        context.JSON(200, gin.H{
+            "message": "received",
+        })
+    }
+}
+
 func getState() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		if data, eTag, err := daprClient.GetState(context2.Background(), StoreName, StateKey); err != nil {
@@ -81,6 +89,7 @@ func main() {
 	r.GET("/ping", ping())
 	r.GET("/state", getState())
 	r.POST("/state", saveState())
+    r.POST("/t1", handleT1())
 
 	s := &http.Server{
 		Addr: ":7070",

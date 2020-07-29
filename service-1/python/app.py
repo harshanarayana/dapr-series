@@ -1,15 +1,14 @@
+from asyncio import sleep as async_sleep
 from os import getenv
 
+import grpc
+import requests
+from dapr.proto import api_service_v1, api_v1, common_v1
+from google.protobuf.any_pb2 import Any
 from sanic import Sanic
 from sanic.log import logger
 from sanic.request import Request
 from sanic.response import json
-
-import grpc
-import requests
-
-from dapr.proto import api_v1, common_v1, api_service_v1
-from google.protobuf.any_pb2 import Any
 
 app = Sanic(__name__)
 
@@ -22,6 +21,7 @@ DAPR_CLIENT = api_service_v1.DaprStub(
     grpc.insecure_channel(f"localhost:{DAPR_GRPC_PORT}")
 )
 DAPR_FORWARDER = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/invoke"
+DAPR_PUBLISHER = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/publish"
 
 
 def _store_state(state_value):
@@ -85,6 +85,32 @@ async def save(request: Request):
     body = request.json
     _store_state(body.get("value", "TEST"))
     return json({"message": "State Stored"})
+
+
+@app.post("/publish/<topic:string>")
+async def publish_message(request: Request, topic: str):
+    data = request.json
+    requests.post(f"{DAPR_PUBLISHER}/{topic}", json={"messageType": topic, "message": data})
+    return json({"message": "published"})
+
+
+@app.post("/t1")
+async def handle_t1(request: Request):
+    d = requests.post(f"{DAPR_FORWARDER}/service-2/method/t1", json=request.json)
+    _store_state(d.text)
+    return json({"message": d.json()})
+
+
+@app.post("/t2")
+async def handle_t2(request: Request):
+    await async_sleep(10)
+    logger.info(request.json)
+    return json({"success": True})
+
+
+@app.get("/dapr/subscribe")
+async def subscribe(request: Request):
+    return json([{"topic": "t1", "route": "t1"}, {"topic": "t2", "route": "t2"}])
 
 
 if __name__ == "__main__":
